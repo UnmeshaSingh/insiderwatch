@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InsiderWatch — Insider Trading Detection System</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+
+    <!-- TOP NAVBAR -->
+    <nav class="navbar">
+        <div class="nav-left">
+            <div class="logo">
+                <span class="logo-icon">🔍</span>
+                <span class="logo-text">InsiderWatch</span>
+            </div>
+            <div class="live-badge">
+                <span class="live-dot"></span>
+                LIVE
+            </div>
+        </div>
+        <div class="nav-center">
+            <div class="ticker-wrapper">
+                <div class="ticker" id="alertTicker">
+                    ⚠️ ADANIENT — Volume spike 4.2x detected &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+                    🔴 WIPRO — Pre-announcement trade flagged &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+                    ⚠️ TCS — ML anomaly score: 87/100 &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+                    🔴 RELIANCE — Unusual options activity &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+                </div>
+            </div>
+        </div>
+        <div class="nav-right">
+            <span class="monitor-count">Monitoring <strong>50</strong> NSE Stocks</span>
+        </div>
+    </nav>
+
+    <!-- ALERT BANNER -->
+    <div class="alert-banner" id="alertBanner">
+        <span class="alert-icon">🚨</span>
+        <span id="alertText">NEW ALERT — ADANIENT: Suspicious pre-announcement trading detected — Risk Score: 91/100</span>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="container">
+
+        <!-- SEARCH BAR -->
+        <div class="search-section">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="stockSearch" placeholder="Search NSE stock — e.g. RELIANCE, TCS, INFY..." />
+                <button class="analyse-btn" onclick="analyseStock()">Analyse</button>
+            </div>
+            <div class="popular-stocks">
+                <span>Quick:</span>
+                <button onclick="searchStock('RELIANCE')">RELIANCE</button>
+                <button onclick="searchStock('TCS')">TCS</button>
+                <button onclick="searchStock('INFY')">INFY</button>
+                <button onclick="searchStock('ADANIENT')">ADANIENT</button>
+                <button onclick="searchStock('WIPRO')">WIPRO</button>
+            </div>
+        </div>
+
+        <!-- STATS ROW -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-value" id="totalMonitored">50</div>
+                <div class="stat-label">Stocks Monitored</div>
+            </div>
+            <div class="stat-card danger">
+                <div class="stat-value" id="highRiskCount">7</div>
+                <div class="stat-label">High Risk Alerts</div>
+            </div>
+            <div class="stat-card warning">
+                <div class="stat-value" id="medRiskCount">12</div>
+                <div class="stat-label">Medium Risk</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalAlertsToday">19</div>
+                <div class="stat-label">Alerts Today</div>
+            </div>
+        </div>
+
+        <!-- MAIN GRID -->
+        <div class="main-grid">
+
+            <!-- LEFT COLUMN -->
+            <div class="left-col">
+
+                <!-- PRICE CHART -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 id="chartTitle">RELIANCE — Price & Volume Chart</h3>
+                        <div class="chart-controls">
+                            <button class="active" onclick="setRange('1mo')">1M</button>
+                            <button onclick="setRange('3mo')">3M</button>
+                            <button onclick="setRange('6mo')">6M</button>
+                        </div>
+                    </div>
+                    <canvas id="priceChart" height="120"></canvas>
+                </div>
+
+                <!-- VOLUME CHART -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Volume Analysis</h3>
+                        <span class="spike-badge">⚠️ Spike Detected</span>
+                    </div>
+                    <canvas id="volumeChart" height="80"></canvas>
+                </div>
+
+                <!-- NETWORK GRAPH -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>🕸️ Insider Trade Network</h3>
+                        <span class="info-badge">Connected Trades</span>
+                    </div>
+                    <div id="networkGraph"></div>
+                    <p class="network-hint">
+                        Nodes represent insiders and connected parties. 
+                        Lines show trade relationships. Red = high risk.
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN -->
+            <div class="right-col">
+
+                <!-- RISK SCORE CARD -->
+                <div class="card risk-card" id="riskCard">
+                    <div class="card-header">
+                        <h3>Risk Assessment</h3>
+                        <span class="ticker-badge" id="currentTicker">RELIANCE</span>
+                    </div>
+                    <div class="risk-score-display">
+                        <div class="risk-circle" id="riskCircle">
+                            <span class="risk-number" id="riskNumber">87</span>
+                            <span class="risk-label">/ 100</span>
+                        </div>
+                        <div class="risk-level" id="riskLevel">HIGH RISK</div>
+                    </div>
+                    <div class="risk-reasons" id="riskReasons">
+                        <h4>⚠️ Why this was flagged:</h4>
+                        <ul>
+                            <li>Volume 4.2x above 30-day average</li>
+                            <li>Trade occurred 11 days before merger announcement</li>
+                            <li>ML model flagged as statistical anomaly</li>
+                            <li>3 connected insider trades in same window</li>
+                        </ul>
+                    </div>
+                    <div class="sebi-reference">
+                        <h4>📋 Regulatory Reference</h4>
+                        <p>This activity may constitute a violation of SEBI (Prohibition of Insider Trading) Regulations, 2015 — Regulation 4(1)</p>
+                        <a href="https://www.sebi.gov.in" target="_blank">View SEBI Guidelines →</a>
+                    </div>
+                </div>
+
+                <!-- ALERTS FEED -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>🚨 Live Alerts Feed</h3>
+                        <span class="live-dot"></span>
+                    </div>
+                    <div class="alerts-feed" id="alertsFeed">
+                        <div class="alert-item high">
+                            <div class="alert-ticker">ADANIENT</div>
+                            <div class="alert-desc">Volume spike 4.2x + pre-announcement</div>
+                            <div class="alert-score high">91</div>
+                        </div>
+                        <div class="alert-item high">
+                            <div class="alert-ticker">WIPRO</div>
+                            <div class="alert-desc">Pre-announcement trade detected</div>
+                            <div class="alert-score high">85</div>
+                        </div>
+                        <div class="alert-item medium">
+                            <div class="alert-ticker">TCS</div>
+                            <div class="alert-desc">ML anomaly score flagged</div>
+                            <div class="alert-score medium">72</div>
+                        </div>
+                        <div class="alert-item medium">
+                            <div class="alert-ticker">INFY</div>
+                            <div class="alert-desc">Unusual options activity</div>
+                            <div class="alert-score medium">65</div>
+                        </div>
+                        <div class="alert-item low">
+                            <div class="alert-ticker">SBIN</div>
+                            <div class="alert-desc">Minor volume deviation</div>
+                            <div class="alert-score low">41</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="js/dashboard.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/network.js"></script>
+</body>
+</html>

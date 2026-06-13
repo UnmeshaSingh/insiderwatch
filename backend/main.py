@@ -1,10 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import yfinance as yf
+yf.set_tz_cache_location("/tmp/yfinance_cache")
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import IsolationForest
-from datetime import datetime, timedelta
+from datetime import datetime
 
 app = FastAPI()
 
@@ -45,22 +46,31 @@ CORPORATE_EVENTS = {
 }
 
 def fetch_stock_data(ticker, period="3mo"):
-    try:
-        stock = yf.Ticker(ticker + ".NS")
-        df = stock.history(period=period)
-        if df.empty:
-            stock = yf.Ticker(ticker)
-            df = stock.history(period=period)
-        return df
-    except Exception as e:
-        print(f"Error fetching {ticker}: {e}")
-        return pd.DataFrame()
+    # Try NSE first, then BSE, then without exchange suffix
+    suffixes = [".NS", ".BO", ""]
+    for suffix in suffixes:
+        try:
+            stock = yf.Ticker(ticker + suffix)
+            df = stock.history(
+                period=period,
+                auto_adjust=True,
+                actions=False
+            )
+            if not df.empty and len(df) > 5:
+                print(f"Successfully fetched {ticker}{suffix}: {len(df)} rows")
+                return df
+        except Exception as e:
+            print(f"Failed {ticker}{suffix}: {e}")
+            continue
+    print(f"All attempts failed for {ticker}")
+    return pd.DataFrame()
 
 def detect_anomalies(df):
     if df.empty or len(df) < 10:
         return df
 
     avg_volume = df['Volume'].rolling(30, min_periods=5).mean()
+    df = df.copy()
     df['volume_spike'] = df['Volume'] / avg_volume
     df['price_change_pct'] = df['Close'].pct_change() * 100
     df['volume_change_pct'] = df['Volume'].pct_change() * 100
@@ -111,7 +121,7 @@ def calculate_risk_score(df, ticker):
         reasons.append(f"Volume {max_spike:.1f}x above 30-day average")
 
     if 'ml_anomaly' in df.columns:
-        anomaly_count = (df['ml_anomaly'] == -1).sum()
+        anomaly_count = int((df['ml_anomaly'] == -1).sum())
         if anomaly_count > 3:
             score += 25
             reasons.append(f"ML model flagged {anomaly_count} statistical anomalies")
@@ -146,8 +156,8 @@ def get_stock(ticker: str):
     prices = [round(float(p), 2) for p in df['Close'].tolist()]
     volumes = [int(v) for v in df['Volume'].tolist()]
     dates = [str(d)[:10] for d in df.index.tolist()]
-    suspicious = df['volume_suspicious'].tolist() if 'volume_suspicious' in df.columns else []
-    ml_flags = (df['ml_anomaly'] == -1).tolist() if 'ml_anomaly' in df.columns else []
+    suspicious = [bool(s) for s in df['volume_suspicious'].tolist()] if 'volume_suspicious' in df.columns else []
+    ml_flags = [bool(m) for m in (df['ml_anomaly'] == -1).tolist()] if 'ml_anomaly' in df.columns else []
     avg_volume = int(df['Volume'].mean())
 
     return {

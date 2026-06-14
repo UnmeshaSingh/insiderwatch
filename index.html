@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>InsiderWatch — Insider Trading Detection System</title>
-    <link rel="stylesheet" href="frontend/css/styles.css">
+    <link rel="stylesheet" href="css/styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -157,6 +157,9 @@
                         <p>This activity may constitute a violation of SEBI (Prohibition of Insider Trading) Regulations, 2015 — Regulation 4(1)</p>
                         <a href="https://www.sebi.gov.in" target="_blank">View SEBI Guidelines →</a>
                     </div>
+                    <button class="report-btn" onclick="generateReport()">
+                        📄 Generate Compliance Report
+                    </button>
                 </div>
 
                 <!-- ALERTS FEED -->
@@ -198,9 +201,9 @@
         </div>
     </div>
 
-    <script src="frontend/js/dashboard.js"></script>
-    <script src="frontend/js/charts.js"></script>
-    <script src="frontend/js/network.js"></script>
-    <script src="frontend/js/api.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/network.js"></script>
+    <script src="js/api.js"></script>
 </body>
 </html>
